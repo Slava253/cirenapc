@@ -143,19 +143,19 @@
         </div>
 
         <div class="upload-section">
-            <div style="color:#ffbb77; font-weight:bold;">🎵 ЗАГРУЗКА ЗВУКОВ</div>
+            <div style="color:#ffbb77; font-weight:bold;">🎵 ЗАГРУЗКА ЗВУКОВ (работает локально)</div>
             <div class="upload-grid">
                 <div class="upload-card">
                     <h4>🚨 ЗВУК ТРЕВОГИ</h4>
                     <input type="file" id="alarmSoundFile" accept="audio/*">
-                    <div class="sound-info">📁 <span id="alarmFileName">не загружен</span></div>
-                    <button class="test-btn" id="testAlarmBtn">🔊 Тест</button>
+                    <div class="sound-info" id="alarmStatus">📁 <span id="alarmFileName">не загружен</span></div>
+                    <button class="test-btn" id="testAlarmBtn">🔊 Тест звука</button>
                 </div>
                 <div class="upload-card">
                     <h4>✅ ЗВУК ОТБОЯ</h4>
                     <input type="file" id="clearSoundFile" accept="audio/*">
-                    <div class="sound-info">📁 <span id="clearFileName">не загружен</span></div>
-                    <button class="test-btn" id="testClearBtn">🔊 Тест</button>
+                    <div class="sound-info" id="clearStatus">📁 <span id="clearFileName">не загружен</span></div>
+                    <button class="test-btn" id="testClearBtn">🔊 Тест звука</button>
                 </div>
             </div>
         </div>
@@ -166,7 +166,7 @@
         </div>
         <div class="footer">
             📱 Откройте phone.html на телефоне<br>
-            🔄 Звуки передаются через Firebase в виде base64<br>
+            🔄 Команды передаются через Firebase<br>
             💡 Нажмите на страницу для разблокировки звука
         </div>
     </div>
@@ -184,15 +184,14 @@
     };
     
     let database;
-    let alarmSoundBase64 = null;
-    let clearSoundBase64 = null;
+    let alarmSoundBlob = null;
+    let clearSoundBlob = null;
     let alarmSoundName = null;
     let clearSoundName = null;
     
     function addLog(msg, isError = false) {
         const debugBox = document.getElementById('debugBox');
         const time = new Date().toLocaleTimeString();
-        const color = isError ? 'color: #ff8888' : '';
         debugBox.innerHTML += `<br>⏰ ${time} - ${msg}`;
         debugBox.scrollTop = debugBox.scrollHeight;
         console.log(msg);
@@ -221,58 +220,86 @@
         }
     }
     
-    // Конвертация файла в base64
-    function fileToBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
-        });
+    // Сохранение звука в локальное хранилище
+    function saveSoundToLocalStorage(type, blob, name) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const dataUrl = e.target.result;
+            localStorage.setItem(`sound_${type}`, dataUrl);
+            localStorage.setItem(`sound_${type}_name`, name);
+            addLog(`✅ Звук "${name}" сохранён в локальное хранилище`);
+        };
+        reader.readAsDataURL(blob);
     }
     
-    // Загрузка звука (сохраняем в Realtime Database как base64)
-    async function uploadSound(file, soundType) {
+    // Загрузка звука из файла
+    function loadSound(file, type) {
         if (!file) {
             addLog("❌ Файл не выбран", true);
             return;
         }
         
-        addLog(`📤 Обработка звука ${soundType}: ${file.name} (${(file.size/1024).toFixed(1)} KB)`);
+        addLog(`📁 Загружен файл: ${file.name} (${(file.size/1024).toFixed(1)} KB)`);
         
-        try {
-            const base64 = await fileToBase64(file);
-            addLog(`✅ Файл сконвертирован в base64`);
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const audioBlob = e.target.result;
             
-            const soundData = {
-                name: file.name,
-                data: base64,
-                size: file.size,
-                type: file.type,
-                timestamp: Date.now()
-            };
-            
-            // Сохраняем в Firebase
-            await database.ref(`sounds/${soundType}`).set(soundData);
-            addLog(`✅ Звук ${soundType} сохранён в Firebase`);
-            
-            if (soundType === 'alarm') {
-                alarmSoundBase64 = base64;
+            if (type === 'alarm') {
+                alarmSoundBlob = audioBlob;
                 alarmSoundName = file.name;
                 document.getElementById('alarmFileName').innerHTML = file.name;
                 document.getElementById('alarmFileName').style.color = '#88ff88';
+                addLog(`✅ Звук тревоги загружен: ${file.name}`);
+                
+                // Отправляем звук на телефон через Firebase
+                sendSoundToPhone('alarm', audioBlob, file.name);
             } else {
-                clearSoundBase64 = base64;
+                clearSoundBlob = audioBlob;
                 clearSoundName = file.name;
                 document.getElementById('clearFileName').innerHTML = file.name;
                 document.getElementById('clearFileName').style.color = '#88ff88';
+                addLog(`✅ Звук отбоя загружен: ${file.name}`);
+                
+                // Отправляем звук на телефон через Firebase
+                sendSoundToPhone('clear', audioBlob, file.name);
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    // Отправка звука на телефон через Firebase
+    async function sendSoundToPhone(type, dataUrl, name) {
+        addLog(`📤 Отправка звука "${name}" на телефон...`);
+        try {
+            // Разбиваем на части если слишком большой (Firebase лимит ~10MB)
+            const maxChunkSize = 500000; // 500KB на чанк
+            const chunks = [];
+            
+            if (dataUrl.length > maxChunkSize) {
+                for (let i = 0; i < dataUrl.length; i += maxChunkSize) {
+                    chunks.push(dataUrl.slice(i, i + maxChunkSize));
+                }
+                addLog(`📦 Звук разбит на ${chunks.length} частей`);
+                
+                // Сохраняем информацию о чанках
+                await database.ref(`sounds/${type}`).set({
+                    name: name,
+                    chunks: chunks,
+                    chunkCount: chunks.length,
+                    timestamp: Date.now()
+                });
+            } else {
+                await database.ref(`sounds/${type}`).set({
+                    name: name,
+                    data: dataUrl,
+                    timestamp: Date.now()
+                });
             }
             
-            return true;
+            addLog(`✅ Звук "${name}" отправлен на телефон`);
         } catch (error) {
-            addLog(`❌ Ошибка: ${error.message}`, true);
-            alert("Ошибка загрузки: " + error.message);
-            return false;
+            addLog(`❌ Ошибка отправки: ${error.message}`, true);
         }
     }
     
@@ -316,15 +343,15 @@
     }
     
     // Воспроизведение звука на компьютере (тест)
-    function playSound(base64, name) {
-        if (!base64) {
+    function playSound(blob, name) {
+        if (!blob) {
             addLog(`⚠️ Звук "${name}" не загружен`, true);
             alert("Сначала загрузите звук!");
             return;
         }
-        const audio = new Audio(base64);
+        const audio = new Audio(blob);
         audio.play().catch(e => {
-            addLog(`❌ Ошибка воспроизведения: ${e.message} - нажмите на страницу`, true);
+            addLog(`❌ Ошибка: ${e.message} - нажмите на страницу`, true);
             alert("Нажмите на страницу для разблокировки звука");
         });
         addLog(`🔊 Воспроизведение: ${name}`);
@@ -344,62 +371,43 @@
     });
     
     // Загрузка файлов
-    document.getElementById('alarmSoundFile').addEventListener('change', async (e) => {
+    document.getElementById('alarmSoundFile').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
-            await uploadSound(file, 'alarm');
+            loadSound(file, 'alarm');
         }
     });
     
-    document.getElementById('clearSoundFile').addEventListener('change', async (e) => {
+    document.getElementById('clearSoundFile').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
-            await uploadSound(file, 'clear');
+            loadSound(file, 'clear');
         }
     });
     
     // Тест звуков
     document.getElementById('testAlarmBtn').addEventListener('click', () => {
-        if (alarmSoundBase64) {
-            playSound(alarmSoundBase64, alarmSoundName);
+        if (alarmSoundBlob) {
+            playSound(alarmSoundBlob, alarmSoundName);
         } else {
-            database.ref('sounds/alarm').once('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data && data.data) {
-                    alarmSoundBase64 = data.data;
-                    alarmSoundName = data.name;
-                    playSound(alarmSoundBase64, alarmSoundName);
-                } else {
-                    addLog("⚠️ Нет загруженного звука тревоги", true);
-                    alert("Сначала загрузите звук тревоги!");
-                }
-            });
+            addLog("⚠️ Нет загруженного звука тревоги", true);
+            alert("Сначала загрузите звук тревоги!");
         }
     });
     
     document.getElementById('testClearBtn').addEventListener('click', () => {
-        if (clearSoundBase64) {
-            playSound(clearSoundBase64, clearSoundName);
+        if (clearSoundBlob) {
+            playSound(clearSoundBlob, clearSoundName);
         } else {
-            database.ref('sounds/clear').once('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data && data.data) {
-                    clearSoundBase64 = data.data;
-                    clearSoundName = data.name;
-                    playSound(clearSoundBase64, clearSoundName);
-                } else {
-                    addLog("⚠️ Нет загруженного звука отбоя", true);
-                    alert("Сначала загрузите звук отбоя!");
-                }
-            });
+            addLog("⚠️ Нет загруженного звука отбоя", true);
+            alert("Сначала загрузите звук отбоя!");
         }
     });
     
     // Разблокировка аудио при клике
     document.body.addEventListener('click', () => {
         addLog("🔊 Аудио разблокировано");
-        // Создаём и сразу останавливаем тихий звук для разблокировки
-        const silentAudio = new Audio("data:audio/wav;base64,U3RlYWx0aCBpcyBhIGdyZWF0IHdheSB0byBlbmpveSB5b3VyIGZh...");
+        const silentAudio = new Audio("data:audio/wav;base64,U3RlYWx0aCBpcyBhIGdyZWF0IHdheSB0byBlbmpveSB5b3VyIGZh");
         silentAudio.play().then(() => {
             silentAudio.pause();
             silentAudio.currentTime = 0;

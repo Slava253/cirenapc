@@ -122,17 +122,18 @@
             overflow-y: auto;
         }
         .footer { margin-top: 20px; font-size: 0.7rem; text-align: center; color: #b0a88c; }
+        .status-online { color: #88ff88; }
+        .status-offline { color: #ff8888; }
         .unlock-banner {
             background: #ff884d33;
             border: 1px solid #ff884d;
-            padding: 10px;
+            padding: 12px;
             border-radius: 30px;
             text-align: center;
             margin-top: 15px;
             cursor: pointer;
-            transition: all 0.2s;
+            font-weight: bold;
         }
-        .unlock-banner:hover { background: #ff884d66; }
     </style>
 </head>
 <body>
@@ -143,7 +144,8 @@
                 <div class="status-light" id="statusLight"></div>
                 <div class="status-text" id="statusText">РЕЖИМ: БЕЗОПАСНО</div>
             </div>
-            <div class="subtitle" style="color:#ffcf9a;">💻 ПУЛЬТ УПРАВЛЕНИЯ (КОМПЬЮТЕР)</div>
+            <div class="subtitle" style="color:#ffcf9a;">💻 ПУЛЬТ УПРАВЛЕНИЯ</div>
+            <div style="font-size: 0.8rem; margin-top: 10px;" id="connectionStatus">🟡 Подключение...</div>
         </div>
 
         <div class="buttons">
@@ -152,25 +154,25 @@
         </div>
 
         <div class="upload-section">
-            <div style="color:#ffbb77; font-weight:bold;">🎵 ЗАГРУЗКА ЗВУКОВ</div>
+            <div style="color:#ffbb77; font-weight:bold;">🎵 ЗАГРУЗКА ЗВУКОВ (сохраняются в облако)</div>
             <div class="upload-grid">
                 <div class="upload-card">
                     <h4>🚨 ЗВУК ТРЕВОГИ</h4>
                     <input type="file" id="alarmSoundFile" accept="audio/*">
-                    <div class="sound-info" id="alarmStatus">📁 <span id="alarmFileName">не загружен</span></div>
+                    <div class="sound-info">📁 <span id="alarmFileName">не загружен</span></div>
                     <button class="test-btn" id="testAlarmBtn">🔊 Тест звука</button>
                 </div>
                 <div class="upload-card">
                     <h4>✅ ЗВУК ОТБОЯ</h4>
                     <input type="file" id="clearSoundFile" accept="audio/*">
-                    <div class="sound-info" id="clearStatus">📁 <span id="clearFileName">не загружен</span></div>
+                    <div class="sound-info">📁 <span id="clearFileName">не загружен</span></div>
                     <button class="test-btn" id="testClearBtn">🔊 Тест звука</button>
                 </div>
             </div>
         </div>
 
         <div class="unlock-banner" id="unlockBanner">
-            🔇 НАЖМИТЕ СЮДА ДЛЯ РАЗБЛОКИРОВКИ ЗВУКА 🔇
+            🔇 НАЖМИТЕ ДЛЯ РАЗБЛОКИРОВКИ ЗВУКА 🔇
         </div>
 
         <div class="debug-box" id="debugBox">
@@ -178,9 +180,9 @@
             ⏳ Инициализация...
         </div>
         <div class="footer">
-            📱 Откройте phone.html на телефоне<br>
-            🔄 Команды передаются через Firebase<br>
-            ⚠️ СНАЧАЛА НАЖМИТЕ НА ЖЁЛТУЮ ПОЛОСУ ДЛЯ РАЗБЛОКИРОВКИ ЗВУКА!
+            🌍 РАБОТАЕТ НА ЛЮБОМ РАССТОЯНИИ!<br>
+            📱 Телефон может быть в любой точке мира<br>
+            🔄 Все данные синхронизируются через Firebase Cloud
         </div>
     </div>
 </div>
@@ -197,17 +199,13 @@
     };
     
     let database;
-    let alarmSoundBlob = null;
-    let clearSoundBlob = null;
-    let alarmSoundName = null;
-    let clearSoundName = null;
+    let alarmSoundData = null;
+    let clearSoundData = null;
     let audioUnlocked = false;
-    let testAudio = null;
     
     function addLog(msg, isError = false) {
         const debugBox = document.getElementById('debugBox');
         const time = new Date().toLocaleTimeString();
-        const color = isError ? 'color: #ff8888' : '';
         debugBox.innerHTML += `<br>⏰ ${time} - ${msg}`;
         debugBox.scrollTop = debugBox.scrollHeight;
         console.log(msg);
@@ -221,12 +219,16 @@
             }
             database = firebase.database();
             
-            const connectedRef = firebase.database().ref(".info/connected");
+            const connectedRef = database.ref(".info/connected");
             connectedRef.on("value", (snap) => {
                 if (snap.val() === true) {
-                    addLog("✅ Подключено к Firebase");
+                    addLog("✅ Подключено к Firebase Cloud");
+                    document.getElementById('connectionStatus').innerHTML = '🟢 Онлайн - связь с облаком';
+                    document.getElementById('connectionStatus').style.color = '#88ff88';
                 } else {
-                    addLog("❌ Нет подключения к Firebase", true);
+                    addLog("❌ Нет подключения к интернету", true);
+                    document.getElementById('connectionStatus').innerHTML = '🔴 Офлайн - проверьте интернет';
+                    document.getElementById('connectionStatus').style.color = '#ff8888';
                 }
             });
             return true;
@@ -236,118 +238,94 @@
         }
     }
     
-    // РАЗБЛОКИРОВКА АУДИО
     function unlockAudio() {
         if (audioUnlocked) return;
         
-        addLog("🔊 Попытка разблокировки аудио...");
-        
-        // Создаём и проигрываем тихий звук для разблокировки
+        addLog("🔊 Разблокировка аудио...");
         const silentAudio = new Audio();
         silentAudio.volume = 0;
         
-        // Пробуем разные способы разблокировки
         const playPromise = silentAudio.play();
-        
         if (playPromise !== undefined) {
             playPromise.then(() => {
                 audioUnlocked = true;
-                addLog("✅ АУДИО РАЗБЛОКИРОВАНО! Теперь звуки будут работать");
-                document.getElementById('unlockBanner').innerHTML = '🔊 ЗВУК РАЗБЛОКИРОВАН! МОЖНО ИСПОЛЬЗОВАТЬ 🔊';
+                addLog("✅ АУДИО РАЗБЛОКИРОВАНО!");
+                document.getElementById('unlockBanner').innerHTML = '🔊 ЗВУК РАЗБЛОКИРОВАН! 🔊';
                 document.getElementById('unlockBanner').style.background = '#2ecc7133';
                 document.getElementById('unlockBanner').style.borderColor = '#2ecc71';
                 silentAudio.pause();
                 silentAudio.currentTime = 0;
             }).catch((error) => {
-                addLog(`❌ Ошибка разблокировки: ${error.message}`, true);
-                document.getElementById('unlockBanner').innerHTML = '⚠️ НАЖМИТЕ ЕЩЁ РАЗ ДЛЯ РАЗБЛОКИРОВКИ ⚠️';
+                addLog(`❌ Ошибка: ${error.message}`, true);
             });
         }
     }
     
-    // Отправка звука на телефон
-    async function sendSoundToPhone(type, dataUrl, name) {
-        addLog(`📤 Отправка звука "${name}" на телефон...`);
-        try {
-            await database.ref(`sounds/${type}`).set({
-                name: name,
-                data: dataUrl,
-                timestamp: Date.now()
-            });
-            addLog(`✅ Звук "${name}" отправлен на телефон`);
-        } catch (error) {
-            addLog(`❌ Ошибка отправки: ${error.message}`, true);
-        }
-    }
-    
-    // Загрузка звука из файла
-    function loadSound(file, type) {
-        if (!file) {
-            addLog("❌ Файл не выбран", true);
-            return;
-        }
+    async function uploadSoundToCloud(file, type) {
+        if (!file) return;
         
-        addLog(`📁 Загружен файл: ${file.name} (${(file.size/1024).toFixed(1)} KB)`);
+        addLog(`📤 Загрузка звука "${file.name}" в облако...`);
         
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
             const audioData = e.target.result;
             
-            if (type === 'alarm') {
-                alarmSoundBlob = audioData;
-                alarmSoundName = file.name;
-                document.getElementById('alarmFileName').innerHTML = file.name;
-                document.getElementById('alarmFileName').style.color = '#88ff88';
-                addLog(`✅ Звук тревоги загружен: ${file.name}`);
-                sendSoundToPhone('alarm', audioData, file.name);
-            } else {
-                clearSoundBlob = audioData;
-                clearSoundName = file.name;
-                document.getElementById('clearFileName').innerHTML = file.name;
-                document.getElementById('clearFileName').style.color = '#88ff88';
-                addLog(`✅ Звук отбоя загружен: ${file.name}`);
-                sendSoundToPhone('clear', audioData, file.name);
+            try {
+                await database.ref(`sounds/${type}`).set({
+                    name: file.name,
+                    data: audioData,
+                    size: file.size,
+                    timestamp: Date.now()
+                });
+                addLog(`✅ Звук "${file.name}" сохранён в облаке!`);
+                
+                if (type === 'alarm') {
+                    alarmSoundData = audioData;
+                    document.getElementById('alarmFileName').innerHTML = file.name;
+                    document.getElementById('alarmFileName').style.color = '#88ff88';
+                } else {
+                    clearSoundData = audioData;
+                    document.getElementById('clearFileName').innerHTML = file.name;
+                    document.getElementById('clearFileName').style.color = '#88ff88';
+                }
+            } catch (error) {
+                addLog(`❌ Ошибка загрузки: ${error.message}`, true);
             }
         };
         reader.readAsDataURL(file);
     }
     
-    // Воспроизведение звука на компьютере (тест)
-    function playSound(blob, name) {
-        if (!blob) {
+    function playSound(data, name) {
+        if (!data) {
             addLog(`⚠️ Звук "${name}" не загружен`, true);
             alert("Сначала загрузите звук!");
             return;
         }
         
         if (!audioUnlocked) {
-            addLog(`⚠️ СНАЧАЛА РАЗБЛОКИРУЙТЕ ЗВУК! Нажмите на жёлтую полосу`, true);
-            alert("Сначала нажмите на жёлтую полосу для разблокировки звука!");
+            addLog(`⚠️ Сначала разблокируйте звук!`, true);
+            alert("Нажмите на жёлтую полосу для разблокировки звука!");
             return;
         }
         
         addLog(`🔊 Воспроизведение: ${name}`);
-        const audio = new Audio(blob);
+        const audio = new Audio(data);
         audio.play().then(() => {
-            addLog(`✅ Звук "${name}" играет успешно`);
+            addLog(`✅ Звук играет`);
         }).catch(e => {
             addLog(`❌ Ошибка: ${e.message}`, true);
-            if (e.message.includes('play()')) {
-                alert("Нажмите на жёлтую полосу для разблокировки звука!");
-            }
         });
     }
     
-    // Отправка команды
     async function sendCommand(command) {
-        addLog(`📤 Отправка команды: ${command}`);
+        addLog(`📤 Отправка команды "${command}" в облако...`);
         try {
             await database.ref('commands').set({
                 type: command,
                 timestamp: Date.now(),
                 from: 'computer'
             });
-            addLog(`✅ Команда "${command}" отправлена`);
+            addLog(`✅ Команда "${command}" отправлена на все устройства!`);
             return true;
         } catch (error) {
             addLog(`❌ Ошибка: ${error.message}`, true);
@@ -355,7 +333,6 @@
         }
     }
     
-    // Обновление состояния
     async function updateAlarmState(active) {
         try {
             await database.ref('alarmState').set({
@@ -368,16 +345,17 @@
             if (active) {
                 light.classList.add('alarm-active');
                 text.innerHTML = '🔴 ТРЕВОГА АКТИВНА!';
+                addLog("🔴 Состояние: ТРЕВОГА");
             } else {
                 light.classList.remove('alarm-active');
                 text.innerHTML = '✅ РЕЖИМ: БЕЗОПАСНО';
+                addLog("🟢 Состояние: БЕЗОПАСНО");
             }
         } catch (error) {
             addLog(`❌ Ошибка: ${error.message}`, true);
         }
     }
     
-    // Кнопки
     document.getElementById('alarmBtn').addEventListener('click', async () => {
         addLog("🔴 НАЖАТА КНОПКА ТРЕВОГА");
         await sendCommand('alarm');
@@ -390,58 +368,48 @@
         await updateAlarmState(false);
     });
     
-    // Загрузка файлов
     document.getElementById('alarmSoundFile').addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (file) {
-            loadSound(file, 'alarm');
-        }
+        if (file) uploadSoundToCloud(file, 'alarm');
     });
     
     document.getElementById('clearSoundFile').addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (file) {
-            loadSound(file, 'clear');
-        }
+        if (file) uploadSoundToCloud(file, 'clear');
     });
     
-    // Тест звуков
     document.getElementById('testAlarmBtn').addEventListener('click', () => {
-        if (alarmSoundBlob) {
-            playSound(alarmSoundBlob, alarmSoundName);
+        if (alarmSoundData) {
+            playSound(alarmSoundData, 'тревоги');
         } else {
-            addLog("⚠️ Нет загруженного звука тревоги", true);
+            addLog("⚠️ Нет звука тревоги", true);
             alert("Сначала загрузите звук тревоги!");
         }
     });
     
     document.getElementById('testClearBtn').addEventListener('click', () => {
-        if (clearSoundBlob) {
-            playSound(clearSoundBlob, clearSoundName);
+        if (clearSoundData) {
+            playSound(clearSoundData, 'отбоя');
         } else {
-            addLog("⚠️ Нет загруженного звука отбоя", true);
+            addLog("⚠️ Нет звука отбоя", true);
             alert("Сначала загрузите звук отбоя!");
         }
     });
     
-    // Разблокировка по клику на баннер
     document.getElementById('unlockBanner').addEventListener('click', () => {
         unlockAudio();
     });
     
-    // Также разблокируем при первом клике на любую кнопку
     document.body.addEventListener('click', () => {
-        if (!audioUnlocked) {
-            unlockAudio();
-        }
+        if (!audioUnlocked) unlockAudio();
     });
     
     if (initFirebase()) {
-        addLog("🎮 Пульт готов к работе");
-        addLog("⚠️ ВАЖНО: Сначала нажмите на ЖЁЛТУЮ ПОЛОСУ для разблокировки звука!");
-        addLog("💡 1. Загрузите звуки через кнопки выше");
-        addLog("💡 2. Нажмите 'Тест' для проверки звука");
-        addLog("💡 3. Нажмите 'Тревога' для отправки сигнала на телефон");
+        addLog("🎮 ПУЛЬТ ГОТОВ К РАБОТЕ");
+        addLog("🌍 Система работает на любом расстоянии!");
+        addLog("💡 1. Загрузите звуки (сохранятся в облако)");
+        addLog("💡 2. Нажмите на жёлтую полосу для звука");
+        addLog("💡 3. Нажмите 'Тревога' - телефон получит сигнал!");
     }
 </script>
 </body>

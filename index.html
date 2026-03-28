@@ -2,48 +2,31 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Пульт управления тревогой - Компьютер</title>
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: linear-gradient(135deg, #0a0f1a 0%, #0a1a1f 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
         }
-
-        .container {
-            max-width: 800px;
-            width: 100%;
-        }
-
+        .container { max-width: 800px; width: 100%; }
         .panel {
             background: rgba(10, 20, 28, 0.85);
             backdrop-filter: blur(16px);
             border-radius: 50px;
             padding: 35px;
             border: 1px solid rgba(255, 100, 80, 0.3);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
+        .header { text-align: center; margin-bottom: 30px; }
         .badge {
             display: inline-flex;
             align-items: center;
@@ -51,9 +34,7 @@
             background: #000000aa;
             padding: 12px 24px;
             border-radius: 100px;
-            margin-bottom: 15px;
         }
-
         .status-light {
             width: 20px;
             height: 20px;
@@ -62,36 +43,22 @@
             box-shadow: 0 0 10px #2ecc71;
             transition: all 0.2s;
         }
-
         .status-light.alarm-active {
             background-color: #e74c3c;
             box-shadow: 0 0 20px #e74c3c;
             animation: pulse 0.8s infinite;
         }
-
         @keyframes pulse {
             0% { transform: scale(0.95); opacity: 0.7; }
             100% { transform: scale(1.2); opacity: 1; }
         }
-
-        .status-text {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #fff5e0;
-        }
-
-        .subtitle {
-            color: #ffcf9a;
-            font-size: 0.9rem;
-        }
-
+        .status-text { font-size: 1.5rem; font-weight: bold; color: #fff5e0; }
         .buttons {
             display: flex;
             gap: 20px;
             margin: 35px 0;
             flex-wrap: wrap;
         }
-
         .btn {
             flex: 1;
             padding: 18px;
@@ -107,44 +74,16 @@
             gap: 10px;
             box-shadow: 0 8px 0 rgba(0,0,0,0.3);
         }
-
-        .btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 4px 0 rgba(0,0,0,0.3);
-        }
-
-        .btn-alarm {
-            background: radial-gradient(circle at 30% 10%, #e62e2e, #8b0000);
-            color: white;
-        }
-
-        .btn-clear {
-            background: radial-gradient(circle at 30% 10%, #2c5a3e, #1a3a2a);
-            color: white;
-        }
-
+        .btn:active { transform: translateY(4px); box-shadow: 0 4px 0 rgba(0,0,0,0.3); }
+        .btn-alarm { background: radial-gradient(circle at 30% 10%, #e62e2e, #8b0000); color: white; }
+        .btn-clear { background: radial-gradient(circle at 30% 10%, #2c5a3e, #1a3a2a); color: white; }
         .upload-section {
             background: #0a181fcc;
             border-radius: 30px;
             padding: 20px;
             margin-top: 20px;
         }
-
-        .upload-title {
-            color: #ffbb77;
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .upload-grid {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
+        .upload-grid { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px; }
         .upload-card {
             flex: 1;
             background: #031016;
@@ -152,12 +91,7 @@
             border-radius: 20px;
             border-left: 4px solid #ff884d;
         }
-
-        .upload-card h4 {
-            color: #ffbb77;
-            margin-bottom: 12px;
-        }
-
+        .upload-card h4 { color: #ffbb77; margin-bottom: 12px; }
         input[type="file"] {
             width: 100%;
             padding: 8px;
@@ -166,16 +100,8 @@
             border-radius: 30px;
             color: white;
             cursor: pointer;
-            margin: 8px 0;
         }
-
-        .sound-info {
-            font-size: 0.8rem;
-            color: #bbccdd;
-            margin-top: 8px;
-            word-break: break-all;
-        }
-
+        .sound-info { font-size: 0.8rem; color: #bbccdd; margin-top: 8px; word-break: break-all; }
         .test-btn {
             margin-top: 10px;
             background: #2c4f5e;
@@ -184,35 +110,19 @@
             padding: 5px 12px;
             border-radius: 20px;
             cursor: pointer;
-            font-size: 0.8rem;
         }
-
-        .test-btn:hover {
-            background: #3e6f82;
-        }
-
-        .info-box {
+        .debug-box {
             margin-top: 20px;
-            background: #031016;
+            background: #00000099;
             padding: 15px;
             border-radius: 20px;
-            font-size: 0.85rem;
-            color: #ffcf9a;
-            text-align: center;
+            font-size: 0.75rem;
+            font-family: monospace;
+            color: #88ff88;
+            max-height: 200px;
+            overflow-y: auto;
         }
-
-        .footer {
-            margin-top: 20px;
-            font-size: 0.7rem;
-            text-align: center;
-            color: #b0a88c;
-        }
-
-        @media (max-width: 600px) {
-            .panel { padding: 20px; }
-            .btn { font-size: 1rem; padding: 14px; }
-            .status-text { font-size: 1.2rem; }
-        }
+        .footer { margin-top: 20px; font-size: 0.7rem; text-align: center; color: #b0a88c; }
     </style>
 </head>
 <body>
@@ -223,62 +133,45 @@
                 <div class="status-light" id="statusLight"></div>
                 <div class="status-text" id="statusText">РЕЖИМ: БЕЗОПАСНО</div>
             </div>
-            <div class="subtitle">💻 ПУЛЬТ УПРАВЛЕНИЯ (КОМПЬЮТЕР)</div>
+            <div class="subtitle" style="color:#ffcf9a;">💻 ПУЛЬТ УПРАВЛЕНИЯ (КОМПЬЮТЕР)</div>
         </div>
 
         <div class="buttons">
-            <button class="btn btn-alarm" id="alarmBtn">
-                🚨 ОБЪЯВИТЬ ТРЕВОГУ
-            </button>
-            <button class="btn btn-clear" id="clearBtn">
-                ✅ ОТБОЙ ТРЕВОГИ
-            </button>
+            <button class="btn btn-alarm" id="alarmBtn">🚨 ОБЪЯВИТЬ ТРЕВОГУ</button>
+            <button class="btn btn-clear" id="clearBtn">✅ ОТБОЙ ТРЕВОГИ</button>
         </div>
 
         <div class="upload-section">
-            <div class="upload-title">
-                🎵 ЗАГРУЗКА ЗВУКОВ
-                <span style="font-size: 0.7rem;">(синхронизируются с телефоном)</span>
-            </div>
+            <div style="color:#ffbb77; font-weight:bold;">🎵 ЗАГРУЗКА ЗВУКОВ</div>
             <div class="upload-grid">
                 <div class="upload-card">
                     <h4>🚨 ЗВУК ТРЕВОГИ</h4>
                     <input type="file" id="alarmSoundFile" accept="audio/*">
-                    <div class="sound-info">
-                        📁 <span id="alarmFileName">не загружен</span>
-                    </div>
-                    <button class="test-btn" id="testAlarmBtn">🔊 Тест звука</button>
-                    <div class="sound-info" style="font-size: 0.7rem; margin-top: 5px;">
-                        🔄 На телефоне будет играть циклически до отбоя
-                    </div>
+                    <div class="sound-info">📁 <span id="alarmFileName">не загружен</span></div>
+                    <button class="test-btn" id="testAlarmBtn">🔊 Тест</button>
                 </div>
                 <div class="upload-card">
                     <h4>✅ ЗВУК ОТБОЯ</h4>
                     <input type="file" id="clearSoundFile" accept="audio/*">
-                    <div class="sound-info">
-                        📁 <span id="clearFileName">не загружен</span>
-                    </div>
-                    <button class="test-btn" id="testClearBtn">🔊 Тест звука</button>
-                    <div class="sound-info" style="font-size: 0.7rem; margin-top: 5px;">
-                        🔁 На телефоне будет играть 2 раза подряд
-                    </div>
+                    <div class="sound-info">📁 <span id="clearFileName">не загружен</span></div>
+                    <button class="test-btn" id="testClearBtn">🔊 Тест</button>
                 </div>
             </div>
         </div>
 
-        <div class="info-box">
-            🔗 Статус: <span id="connectionStatus">Подключение к Firebase...</span><br>
-            📱 Откройте <strong>phone.html</strong> на телефоне для приёма сигналов
+        <div class="debug-box" id="debugBox">
+            🔍 ЛОГ СОБЫТИЙ:<br>
+            ⏳ Инициализация...
         </div>
         <div class="footer">
-            ⚡ Все звуки и команды синхронизируются через Firebase<br>
-            📡 Телефон автоматически получит загруженные звуки
+            📱 Откройте phone.html на телефоне<br>
+            🔄 Данные синхронизируются через Firebase
         </div>
     </div>
 </div>
 
 <script>
-    // ========== КОНФИГУРАЦИЯ FIREBASE (ВАША) ==========
+    // ========== ВАША КОНФИГУРАЦИЯ FIREBASE ==========
     const firebaseConfig = {
         apiKey: "AIzaSyDbbkUV8yZd_i4g-6IJ_VPbQlh7uRp2kFg",
         authDomain: "alarm-system-88f83.firebaseapp.com",
@@ -289,119 +182,143 @@
         measurementId: "G-CT25QT7CJD"
     };
     
-    // Инициализация Firebase
-    let app, database, storage;
+    let database, storage;
     
+    function addLog(msg) {
+        const debugBox = document.getElementById('debugBox');
+        const time = new Date().toLocaleTimeString();
+        debugBox.innerHTML += `<br>⏰ ${time} - ${msg}`;
+        debugBox.scrollTop = debugBox.scrollHeight;
+        console.log(msg);
+    }
+    
+    // Инициализация Firebase
     function initFirebase() {
         try {
             if (!firebase.apps.length) {
-                app = firebase.initializeApp(firebaseConfig);
-            } else {
-                app = firebase.app();
+                firebase.initializeApp(firebaseConfig);
+                addLog("✅ Firebase инициализирован");
             }
             database = firebase.database();
             storage = firebase.storage();
-            document.getElementById('connectionStatus').innerHTML = '✅ Подключено к Firebase';
-            document.getElementById('connectionStatus').style.color = '#aaffaa';
+            
+            // Проверка подключения
+            const connectedRef = firebase.database().ref(".info/connected");
+            connectedRef.on("value", (snap) => {
+                if (snap.val() === true) {
+                    addLog("✅ Подключено к Firebase Realtime Database");
+                } else {
+                    addLog("❌ Нет подключения к Firebase");
+                }
+            });
+            
             return true;
         } catch (error) {
-            console.error("Ошибка Firebase:", error);
-            document.getElementById('connectionStatus').innerHTML = '❌ Ошибка подключения! Проверьте конфигурацию';
-            document.getElementById('connectionStatus').style.color = '#ff8888';
+            addLog(`❌ Ошибка Firebase: ${error.message}`);
             return false;
         }
     }
     
-    // Загрузка звука в Storage
+    // Отправка команды
+    async function sendCommand(command) {
+        addLog(`📤 Отправка команды: ${command}`);
+        try {
+            await database.ref('commands').set({
+                type: command,
+                timestamp: Date.now(),
+                from: 'computer'
+            });
+            addLog(`✅ Команда "${command}" отправлена успешно`);
+            return true;
+        } catch (error) {
+            addLog(`❌ Ошибка отправки: ${error.message}`);
+            alert("Ошибка отправки команды: " + error.message);
+            return false;
+        }
+    }
+    
+    // Обновление состояния
+    async function updateAlarmState(active) {
+        try {
+            await database.ref('alarmState').set({
+                active: active,
+                timestamp: Date.now()
+            });
+            addLog(`📊 Состояние тревоги: ${active ? "АКТИВНА" : "БЕЗОПАСНО"}`);
+            
+            const light = document.getElementById('statusLight');
+            const text = document.getElementById('statusText');
+            if (active) {
+                light.classList.add('alarm-active');
+                text.innerHTML = '🔴 ТРЕВОГА АКТИВНА!';
+            } else {
+                light.classList.remove('alarm-active');
+                text.innerHTML = '✅ РЕЖИМ: БЕЗОПАСНО';
+            }
+        } catch (error) {
+            addLog(`❌ Ошибка обновления состояния: ${error.message}`);
+        }
+    }
+    
+    // Загрузка звука
     async function uploadSound(file, soundType) {
         if (!file) return;
+        addLog(`📤 Загрузка звука ${soundType}: ${file.name}`);
+        
         const fileName = `${Date.now()}_${soundType}_${file.name}`;
         const storageRef = storage.ref().child(`sounds/${fileName}`);
         
         try {
-            document.getElementById('connectionStatus').innerHTML = '📤 Загрузка звука...';
             const snapshot = await storageRef.put(file);
             const downloadUrl = await snapshot.ref.getDownloadURL();
+            addLog(`✅ Звук загружен, URL получен`);
             
             await database.ref(`sounds/${soundType}`).set({
                 url: downloadUrl,
                 name: file.name,
                 timestamp: Date.now()
             });
+            addLog(`✅ Звук ${soundType} сохранён в БД`);
             
-            document.getElementById('connectionStatus').innerHTML = '✅ Звук загружен и синхронизирован';
-            setTimeout(() => {
-                document.getElementById('connectionStatus').innerHTML = '✅ Подключено к Firebase';
-            }, 2000);
+            if (soundType === 'alarm') {
+                document.getElementById('alarmFileName').innerHTML = file.name;
+            } else {
+                document.getElementById('clearFileName').innerHTML = file.name;
+            }
             
             return downloadUrl;
         } catch (error) {
-            console.error("Ошибка загрузки:", error);
-            document.getElementById('connectionStatus').innerHTML = '❌ Ошибка загрузки звука';
-            alert("Ошибка загрузки. Проверьте настройки Firebase Storage.");
+            addLog(`❌ Ошибка загрузки: ${error.message}`);
+            alert("Ошибка загрузки: " + error.message);
             return null;
         }
     }
     
-    // Отправка команды
-    async function sendCommand(command) {
+    // Тестовая отправка для проверки связи
+    async function testConnection() {
+        addLog("🔍 Тестирование соединения...");
         try {
-            await database.ref('commands').set({
-                type: command,
-                timestamp: Date.now()
+            const testRef = database.ref('test');
+            await testRef.set({ message: "ping", time: Date.now() });
+            addLog("✅ Тестовая запись создана успешно");
+            
+            testRef.once('value', (snap) => {
+                addLog(`✅ Данные прочитаны: ${JSON.stringify(snap.val())}`);
             });
-            return true;
         } catch (error) {
-            console.error("Ошибка отправки:", error);
-            alert("Ошибка отправки команды");
-            return false;
+            addLog(`❌ Тест не удался: ${error.message}`);
         }
     }
     
-    // Обновление состояния тревоги
-    async function updateAlarmState(active) {
-        await database.ref('alarmState').set({
-            active: active,
-            timestamp: Date.now()
-        });
-        
-        const light = document.getElementById('statusLight');
-        const text = document.getElementById('statusText');
-        
-        if (active) {
-            light.classList.add('alarm-active');
-            text.innerHTML = '🔴 ТРЕВОГА АКТИВНА!';
-        } else {
-            light.classList.remove('alarm-active');
-            text.innerHTML = '✅ РЕЖИМ: БЕЗОПАСНО';
-        }
-    }
-    
-    // Слушаем изменения состояния
-    function listenAlarmState() {
-        database.ref('alarmState').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                const light = document.getElementById('statusLight');
-                const text = document.getElementById('statusText');
-                if (data.active) {
-                    light.classList.add('alarm-active');
-                    text.innerHTML = '🔴 ТРЕВОГА АКТИВНА!';
-                } else {
-                    light.classList.remove('alarm-active');
-                    text.innerHTML = '✅ РЕЖИМ: БЕЗОПАСНО';
-                }
-            }
-        });
-    }
-    
-    // Кнопки управления
+    // Кнопки
     document.getElementById('alarmBtn').addEventListener('click', async () => {
+        addLog("🔴 Нажата кнопка ТРЕВОГА");
         await sendCommand('alarm');
         await updateAlarmState(true);
     });
     
     document.getElementById('clearBtn').addEventListener('click', async () => {
+        addLog("🟢 Нажата кнопка ОТБОЙ");
         await sendCommand('clear');
         await updateAlarmState(false);
     });
@@ -409,18 +326,12 @@
     // Загрузка звуков
     document.getElementById('alarmSoundFile').addEventListener('change', async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            await uploadSound(file, 'alarm');
-            document.getElementById('alarmFileName').innerHTML = file.name;
-        }
+        if (file) await uploadSound(file, 'alarm');
     });
     
     document.getElementById('clearSoundFile').addEventListener('change', async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            await uploadSound(file, 'clear');
-            document.getElementById('clearFileName').innerHTML = file.name;
-        }
+        if (file) await uploadSound(file, 'clear');
     });
     
     // Тест звуков
@@ -428,9 +339,11 @@
         database.ref('sounds/alarm').once('value', (snapshot) => {
             const data = snapshot.val();
             if (data && data.url) {
+                addLog("🔊 Тест звука тревоги");
                 const audio = new Audio(data.url);
-                audio.play().catch(e => alert("Ошибка воспроизведения"));
+                audio.play().catch(e => addLog(`❌ Ошибка: ${e.message}`));
             } else {
+                addLog("⚠️ Нет загруженного звука тревоги");
                 alert("Сначала загрузите звук тревоги!");
             }
         });
@@ -440,32 +353,36 @@
         database.ref('sounds/clear').once('value', (snapshot) => {
             const data = snapshot.val();
             if (data && data.url) {
+                addLog("🔊 Тест звука отбоя");
                 const audio = new Audio(data.url);
-                audio.play().catch(e => alert("Ошибка воспроизведения"));
+                audio.play().catch(e => addLog(`❌ Ошибка: ${e.message}`));
             } else {
+                addLog("⚠️ Нет загруженного звука отбоя");
                 alert("Сначала загрузите звук отбоя!");
             }
         });
     });
     
-    // Обновление имён файлов при получении
-    database.ref('sounds/alarm').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.name) {
-            document.getElementById('alarmFileName').innerHTML = data.name;
-        }
-    });
-    
-    database.ref('sounds/clear').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.name) {
-            document.getElementById('clearFileName').innerHTML = data.name;
-        }
-    });
+    // Слушаем ответы от телефона
+    function listenForResponses() {
+        database.ref('phoneResponses').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                addLog(`📱 Ответ от телефона: ${JSON.stringify(data)}`);
+            }
+        });
+    }
     
     // Запуск
     if (initFirebase()) {
-        listenAlarmState();
+        setTimeout(() => testConnection(), 1000);
+        listenForResponses();
+        addLog("🎮 Пульт готов к работе");
+    } else {
+        addLog("❌ Не удалось инициализировать Firebase");
+        addLog("💡 Проверьте: 1) Включена ли Realtime Database в консоли Firebase");
+        addLog("💡 2) Включено ли Storage");
+        addLog("💡 3) Правила доступа установлены в true");
     }
 </script>
 </body>

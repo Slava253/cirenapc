@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ESP32 Блокнот</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+
+<header>
+
+<h1>📝 ESP32 Блокнот</h1>
+
+<p>Ваши заметки хранятся прямо в ESP32</p>
+
+</header>
+
+
+
+<section class="panel">
+
+
+<input 
+id="title"
+placeholder="Название заметки">
+
+
+<textarea 
+id="text"
+placeholder="Введите текст..."></textarea>
+
+
+
+<div class="buttons">
+
+<button onclick="addNote()">
+➕ Сохранить
+</button>
+
+
+<button onclick="exportNotes()">
+📤 Экспорт
+</button>
+
+
+<button onclick="clearNotes()" class="danger">
+🗑 Очистить
+</button>
+
+
+</div>
+
+
+</section>
+
+
+
+
+<section class="search">
+
+
+<input 
+id="search"
+placeholder="🔍 Поиск заметок"
+oninput="loadNotes()">
+
+
+
+</section>
+
+
+
+
+
+<section id="notes">
+
+</section>
+
+
+
+</div>
+
+
+
+<script src="script.js"></script>
+
+
+</body>
+
+</html>
